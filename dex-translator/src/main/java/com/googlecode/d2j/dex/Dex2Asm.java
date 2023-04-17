@@ -530,21 +530,13 @@ public class Dex2Asm {
         if (isInnerClass) {
             // build Outer Clz
             if (clzInfo.innerName == null) { // anonymous Innerclass
-                String outerClzName;
-
                 Method enclosingMethod = clzInfo.enclosingMethod;
                 if (enclosingMethod != null) {
-                    outerClzName = toInternalName(enclosingMethod.getOwner());
-                    cv.visitOuterClass(outerClzName, enclosingMethod.getName(), enclosingMethod.getDesc());
+                    cv.visitOuterClass(toInternalName(enclosingMethod.getOwner()), enclosingMethod.getName(),
+                            enclosingMethod.getDesc());
                 } else {
-                    outerClzName = toInternalName(clzInfo.enclosingClass.name);
-                    cv.visitOuterClass(outerClzName, null, null);
-                }
-
-                // Force anonymous classes to have an internalName if they originated from their owner
-                String clzName = toInternalName(clzInfo.name);
-                if (clzName.startsWith(outerClzName + "$")) {
-                    clzInfo.innerName = clzName.substring(outerClzName.length() + 1);
+                    Clz enclosingClass = clzInfo.enclosingClass;
+                    cv.visitOuterClass(toInternalName(enclosingClass.name), null, null);
                 }
             }
             searchEnclosing(clzInfo, innerClassNodes);
