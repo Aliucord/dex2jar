@@ -175,6 +175,7 @@ public class Dex2Asm {
         }
         access &= ~DexConstants.ACC_DECLARED_SYNCHRONIZED; // clean ACC_DECLARED_SYNCHRONIZED
         access &= ~Opcodes.ACC_SYNTHETIC; // clean ACC_SYNTHETIC
+        access &= ~Opcodes.ACC_FINAL;
         return access;
     }
 
