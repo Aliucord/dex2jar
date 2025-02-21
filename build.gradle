@@ -1,50 +1,15 @@
 plugins {
-    id "application"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "base"
+    id "signing"
+    alias libs.plugins.nexus.publish
+    id "dex2jar.build-conventions"
+    alias libs.plugins.versions
 }
 
-ext.antlr3Version = '3.5.3'
-ext.antlr4Version = '4.9.3' // Newer versions only for Java 11+
-ext.asmVersion = '9.5'
-ext.baksmaliVersion = '2.5.2'
-ext.commonsCompressVersion = '1.22'
-ext.jUnitVersion = '5.9.2'
-ext.r8Version = '4.0.52'
-
-allprojects {
-    group = 'com.aliucord.d2j'
-    version = '2.1-SNAPSHOT'
-
-    repositories {
-        mavenCentral()
-        google()
-    }
-}
+description = 'Supermodule for dex2jar'
 
 subprojects {
-    apply plugin: 'java'
     apply plugin: 'maven-publish'
-
-    sourceCompatibility = targetCompatibility = 1.8
-
-    dependencies {
-        implementation fileTree(dir: 'libs', include: '*.jar')
-        testImplementation "org.junit.jupiter:junit-jupiter-api:${project.property('jUnitVersion')}"
-        testImplementation "org.junit.jupiter:junit-jupiter-params:${project.property('jUnitVersion')}"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${project.property('jUnitVersion')}"
-    }
-
-    [compileJava, compileTestJava]*.options.collect { options -> options.encoding = 'UTF-8' }
-
-    test {
-        useJUnitPlatform()
-
-        systemProperty 'junit.jupiter.execution.parallel.enabled', true
-        systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
-    }
-
-    // Cache list of tasks
-    project.getAllTasks(true)
 
     publishing {
         publications {
@@ -64,14 +29,15 @@ subprojects {
     }
 }
 
-mainClassName = "com.googlecode.dex2jar.tools.Dex2jarCmd"
-archivesBaseName = "dex2jar"
-
 dependencies {
-    implementation project(':dex-tools')
-}
-
-shadowJar {
-    archiveClassifier.set(null)
-    archiveVersion.set("")
+    api(project(":d2j-base-cmd"))
+    api project(path: ':d2j-external', configuration: 'shadow')
+    api(project(":d2j-jasmin"))
+    api(project(":d2j-smali"))
+    api(project(":dex-ir"))
+    api(project(":dex-reader"))
+    api(project(":dex-reader-api"))
+    api(project(":dex-tools"))
+    api(project(":dex-translator"))
+    api(project(":dex-writer"))
 }

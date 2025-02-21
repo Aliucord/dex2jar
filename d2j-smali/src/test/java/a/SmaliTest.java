@@ -1,5 +1,14 @@
 package a;
 
+import com.android.tools.smali.baksmali.Adaptors.ClassDefinition;
+import com.android.tools.smali.baksmali.BaksmaliOptions;
+import com.android.tools.smali.baksmali.formatter.BaksmaliWriter;
+import com.android.tools.smali.dexlib2.DexFileFactory;
+import com.android.tools.smali.dexlib2.Opcodes;
+import com.android.tools.smali.dexlib2.dexbacked.DexBackedClassDef;
+import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile;
+import com.android.tools.smali.dexlib2.util.SyntheticAccessorResolver;
+import com.googlecode.d2j.DexConstants;
 import com.googlecode.d2j.dex.writer.DexFileWriter;
 import com.googlecode.d2j.node.DexClassNode;
 import com.googlecode.d2j.node.DexFileNode;
@@ -17,14 +26,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import org.jf.baksmali.Adaptors.ClassDefinition;
-import org.jf.baksmali.BaksmaliOptions;
-import org.jf.baksmali.formatter.BaksmaliWriter;
-import org.jf.dexlib2.DexFileFactory;
-import org.jf.dexlib2.Opcodes;
-import org.jf.dexlib2.dexbacked.DexBackedClassDef;
-import org.jf.dexlib2.dexbacked.DexBackedDexFile;
-import org.jf.dexlib2.util.SyntheticAccessorResolver;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,9 +71,11 @@ public class SmaliTest {
     }
 
     private void doTest(File dexFile) throws IOException {
+        int dexVersion = new DexFileReader(dexFile).getDexVersion();
+        Opcodes opcodes = Opcodes.forApi(DexConstants.toMiniAndroidApiLevel(dexVersion));
         DexBackedDexFile dex;
         try {
-            dex = DexFileFactory.loadDexFile(dexFile, Opcodes.forApi(14));
+            dex = DexFileFactory.loadDexFile(dexFile, opcodes);
         } catch (DexBackedDexFile.NotADexFile ex) {
             ex.printStackTrace();
             return;
@@ -91,7 +94,7 @@ public class SmaliTest {
 
             {
                 byte[] data = toDex(dexClassNode);
-                DexBackedClassDef def2 = new DexBackedDexFile(Opcodes.forApi(14), data).getClasses().iterator().next();
+                DexBackedClassDef def2 = new DexBackedDexFile(opcodes, data).getClasses().iterator().next();
                 String baksmali3 = baksmali(def2); // original
                 assertEquals(smali, baksmali3);
             }
@@ -101,7 +104,7 @@ public class SmaliTest {
             assertEquals(psmali, pbaksmali(dexClassNode2), "cmp smalip");
 
             byte[] data = toDex(dexClassNode2);
-            DexBackedClassDef def2 = new DexBackedDexFile(Opcodes.forApi(14), data).getClasses().iterator().next();
+            DexBackedClassDef def2 = new DexBackedDexFile(opcodes, data).getClasses().iterator().next();
             String baksmali3 = baksmali(def2); // original
             assertEquals(smali, baksmali3);
         }
@@ -126,7 +129,7 @@ public class SmaliTest {
     private static String baksmali(DexBackedClassDef def) throws IOException {
         BaksmaliOptions opts = new BaksmaliOptions();
         opts.debugInfo = false;
-        opts.syntheticAccessorResolver = new SyntheticAccessorResolver(Opcodes.getDefault(), new ArrayList<>());
+        opts.syntheticAccessorResolver = new SyntheticAccessorResolver(def.dexFile.getOpcodes(), new ArrayList<>());
         ClassDefinition classDefinition = new ClassDefinition(opts, def);
         StringWriter bufWriter = new StringWriter();
         BaksmaliWriter writer = new BaksmaliWriter(bufWriter);

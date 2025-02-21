@@ -1,5 +1,6 @@
 package com.googlecode.d2j.reader;
 
+import com.googlecode.d2j.CallSite;
 import com.googlecode.d2j.DexConstants;
 import com.googlecode.d2j.DexException;
 import com.googlecode.d2j.DexLabel;
@@ -41,7 +42,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static com.googlecode.d2j.DexConstants.DEX_035;
-import static com.googlecode.d2j.DexConstants.DEX_037;
+import static com.googlecode.d2j.DexConstants.DEX_038;
+import static com.googlecode.d2j.DexConstants.DEX_040;
 
 /**
  * Open and read a dex file.this is the entrance of dex-reader. to read a dex/odex, use the following code:
@@ -92,10 +94,16 @@ public class DexFileReader implements BaseDexFileReader {
      */
     public static final int KEEP_CLINIT = 1 << 7;
 
-    /**
-     * keep clinit method when {@link #SKIP_DEBUG}
-     */
     public static final int SKIP_EXCEPTION = 1 << 8;
+
+    public static final int DONT_SANITIZE_NAMES = 1 << 9;
+
+    /**
+     * Instruct ASM to compute frames when generating class files,
+     * using {@link org.objectweb.asm.ClassWriter#COMPUTE_FRAMES}
+     * **EXPERIMENTAL CODE**
+     */
+    public static final int COMPUTE_FRAMES = 1 << 10;
 
     // private static final int REVERSE_ENDIAN_CONSTANT = 0x78563412;
 
@@ -238,7 +246,7 @@ public class DexFileReader implements BaseDexFileReader {
             throw new DexException("Magic unsupported.");
         }
         int version = in.getInt() >> 8;
-        if (version < DEX_035) {
+        if (version < DEX_035 || version > DEX_040) {
             System.err.println("Unknown DEX version. Trying anyway...");
             //throw new DexException("not support version.");
         }
@@ -280,7 +288,7 @@ public class DexFileReader implements BaseDexFileReader {
         int callSiteIdsSize = 0;
         int methodHandleIdsOff = 0;
         int methodHandleIdsSize = 0;
-        if (dexVersion > DEX_037) {
+        if (dexVersion >= DEX_038) {
             in.position(mapOff);
             int size = in.getInt();
             for (int i = 0; i < size; i++) {
@@ -1194,8 +1202,7 @@ public class DexFileReader implements BaseDexFileReader {
     }
 
     private void findLabels(byte[] insns, BitSet nextBit, BitSet badOps, Map<Integer, DexLabel> labelsMap,
-                            Set<Integer> handlers,
-                            Method method) {
+                            Set<Integer> handlers, Method method) {
         Queue<Integer> q = new LinkedList<>();
         q.add(0);
         q.addAll(handlers);
@@ -1671,6 +1678,12 @@ public class DexFileReader implements BaseDexFileReader {
                         dcv.visitTypeStmt(op, a, -1, getType(b));
                     }
                     break;
+                case kIndexMethodHandleRef:
+                    dcv.visitConstStmt(op, a, getMethodHandle(b));
+                    break;
+                case kIndexProtoRef:
+                    dcv.visitConstStmt(op, a, getProto(b));
+                    break;
                 default:
                     break;
                 }
@@ -1720,10 +1733,7 @@ public class DexFileReader implements BaseDexFileReader {
                 if (op.indexType == InstructionIndexType.kIndexTypeRef) {
                     dcv.visitFilledNewArrayStmt(op, regs, getType(b));
                 } else if (op.indexType == InstructionIndexType.kIndexCallSiteRef) {
-                    Object[] callsite = getCallSite(b);
-                    Object[] constArgs = Arrays.copyOfRange(callsite, 3, callsite.length);
-                    dcv.visitMethodStmt(op, regs, (String) callsite[1], (Proto) callsite[2],
-                            (MethodHandle) callsite[0], constArgs);
+                    dcv.visitMethodStmt(op, regs, getCallSite(b));
                 } else {
                     dcv.visitMethodStmt(op, regs, getMethod(b));
                 }
@@ -1740,10 +1750,7 @@ public class DexFileReader implements BaseDexFileReader {
                 if (op.indexType == InstructionIndexType.kIndexTypeRef) {
                     dcv.visitFilledNewArrayStmt(op, regs, getType(b));
                 } else if (op.indexType == InstructionIndexType.kIndexCallSiteRef) {
-                    Object[] callsite = getCallSite(b);
-                    Object[] constArgs = Arrays.copyOfRange(callsite, 3, callsite.length - 3);
-                    dcv.visitMethodStmt(op, regs, (String) callsite[1], (Proto) callsite[2],
-                            (MethodHandle) callsite[0], constArgs);
+                    dcv.visitMethodStmt(op, regs, getCallSite(b));
                 } else {
                     dcv.visitMethodStmt(op, regs, getMethod(b));
                 }
@@ -1869,11 +1876,24 @@ public class DexFileReader implements BaseDexFileReader {
         }
     }
 
-    private Object[] getCallSite(int b) {
+    private CallSite getCallSite(int b) {
         callSiteIdIn.position(b * 4);
         int callSiteOff = callSiteIdIn.getInt();
 
-        return readEncodedArrayItem(callSiteOff);
+        Object[] call_site_items = readEncodedArrayItem(callSiteOff);
+        Object[] constArgs;
+        if (call_site_items.length > 3) {
+            constArgs = Arrays.copyOfRange(call_site_items, 3, call_site_items.length);
+        } else {
+            constArgs = new Object[0];
+        }
+
+        return new CallSite(
+                String.format("call_site_%d", b),
+                (MethodHandle) call_site_items[0],
+                (String) call_site_items[1],
+                (Proto) call_site_items[2],
+                constArgs);
     }
 
     /**

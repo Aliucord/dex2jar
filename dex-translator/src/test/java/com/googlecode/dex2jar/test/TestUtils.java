@@ -19,6 +19,7 @@ import com.googlecode.d2j.node.DexMethodNode;
 import com.googlecode.d2j.reader.zip.ZipUtil;
 import com.googlecode.d2j.smali.BaksmaliDumper;
 import com.googlecode.d2j.visitors.DexClassVisitor;
+import com.googlecode.dex2jar.tools.Constants;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -55,7 +55,6 @@ import org.objectweb.asm.tree.analysis.BasicVerifier;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Value;
 import org.objectweb.asm.util.CheckClassAdapter;
-import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
@@ -71,17 +70,18 @@ public abstract class TestUtils {
     }
 
     public static void checkZipFile(File zip) throws Exception {
-        ZipFile zipFile = new ZipFile(zip);
-        for (Enumeration<? extends ZipEntry> e = zipFile.entries(); e.hasMoreElements(); ) {
-            ZipEntry entry = e.nextElement();
-            if (entry.getName().endsWith(".class")) {
-                StringWriter sw = new StringWriter();
-                // PrintWriter pw = new PrintWriter(sw);
+        try (ZipFile zipFile = new ZipFile(zip)) {
+            for (Enumeration<? extends ZipEntry> e = zipFile.entries(); e.hasMoreElements(); ) {
+                ZipEntry entry = e.nextElement();
+                if (entry.getName().endsWith(".class")) {
+                    StringWriter sw = new StringWriter();
+                    // PrintWriter pw = new PrintWriter(sw);
 
-                try (InputStream is = zipFile.getInputStream(entry)) {
-                    verify(new ClassReader(ZipUtil.toByteArray(is)));
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        verify(new ClassReader(ZipUtil.toByteArray(is)));
+                    }
+                    assertEquals(0, sw.toString().length(), sw.toString());
                 }
-                assertEquals(0, sw.toString().length(), sw.toString());
             }
         }
     }
@@ -155,15 +155,11 @@ public abstract class TestUtils {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     String name = file.getFileName().toString();
-                    boolean add = false;
                     for (String ext : exts) {
                         if (name.endsWith(ext)) {
-                            add = true;
+                            list.add(file);
                             break;
                         }
-                    }
-                    if (add) {
-                        list.add(file);
                     }
                     return super.visitFile(file, attrs);
                 }
@@ -174,22 +170,20 @@ public abstract class TestUtils {
         return list;
     }
 
-    static Field buf;
-
-    static {
-        try {
-            buf = Printer.class.getDeclaredField("text");
-        } catch (NoSuchFieldException | SecurityException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    private static class StringBuilderTextifier extends Textifier {
+        public StringBuilderTextifier() {
+            super(Constants.ASM_VERSION);
         }
-        buf.setAccessible(true);
+
+        public StringBuilder getStringBuilder() {
+            return super.stringBuilder;
+        }
     }
 
     static <T extends Value> void printAnalyzerResult(MethodNode method, Analyzer<T> a, final PrintWriter pw)
             throws IllegalArgumentException, IllegalAccessException {
-        Frame<T>[] frames = a.getFrames();
-        Textifier t = new Textifier();
+        Frame[] frames = a.getFrames();
+        StringBuilderTextifier t = new StringBuilderTextifier();
         TraceMethodVisitor mv = new TraceMethodVisitor(t);
         String format = "%05d %-" + (method.maxStack + method.maxLocals + 6) + "s|%s";
         for (int j = 0; j < method.instructions.size(); ++j) {
@@ -208,11 +202,11 @@ public abstract class TestUtils {
                     s.append(getShortName(f.getStack(k).toString()));
                 }
             }
-            pw.printf(format, j, s, buf.get(t)); // mv.text.get(j));
+            pw.printf(format, j, s, t.getStringBuilder()); // mv.text.get(j));
         }
         for (int j = 0; j < method.tryCatchBlocks.size(); ++j) {
-            method.tryCatchBlocks.get(j).accept(mv);
-            pw.print(" " + buf.get(t));
+            ((TryCatchBlockNode) method.tryCatchBlocks.get(j)).accept(mv);
+            pw.print(" " + t.getStringBuilder());
         }
         pw.println();
         pw.flush();
@@ -297,7 +291,7 @@ public abstract class TestUtils {
             }
         };
         final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw);
+        final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw, false);
         ClassVisitorFactory cvf = classInternalName -> rca;
         if (fileNode != null) {
             dex2Asm.convertClass(clzNode, cvf, fileNode);
@@ -314,8 +308,8 @@ public abstract class TestUtils {
         CfOptions cfOptions = new CfOptions();
         cfOptions.strictNameCheck = false;
         DexOptions dexOptions = new DexOptions();
-        if (fileNode != null && fileNode.dexVersion >= DexConstants.DEX_037) {
-            dexOptions.minSdkVersion = 26;
+        if (fileNode != null) {
+            dexOptions.minSdkVersion = DexConstants.toMiniAndroidApiLevel(fileNode.dexVersion);
         }
 
         DirectClassFile dcf = new DirectClassFile(data, rca.getClassName() + ".class", true);

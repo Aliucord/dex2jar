@@ -1,6 +1,10 @@
-description = 'Dex Writer'
+plugins {
+    id "dex2jar.build-conventions"
+}
+
+description = 'Dex/Dalvik writer for dex2jar'
 
 dependencies {
-    implementation project(':dex-reader-api')
+    api project(':dex-reader-api')
     testImplementation project(':dex-reader')
 }

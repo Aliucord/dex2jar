@@ -486,7 +486,7 @@ public class TypeTransformer implements Transformer {
                 return b;
             } else { // as==bs;
                 String elementTypeA = a.substring(as);
-                String elementTypeB = a.substring(bs);
+                String elementTypeB = b.substring(bs);
                 TypeClass ta = TypeClass.clzOf(elementTypeA);
                 TypeClass tb = TypeClass.clzOf(elementTypeB);
                 if (ta.fixed && !tb.fixed) {
@@ -495,10 +495,7 @@ public class TypeTransformer implements Transformer {
                     return b;
                 } else if (ta.fixed) {
                     if (ta != tb) {
-                        if (as == 0) {
-                            throw new RuntimeException();
-                        }
-                        return buildArray(as - 1, "L");
+                        return buildArray(as == 0 ? 0 : as - 1, "L");
                     }
                     if (ta == TypeClass.INT) {
                         String chooseType = "I";
@@ -615,7 +612,7 @@ public class TypeTransformer implements Transformer {
             } else if (ta.fixed) {
                 // special allow merge of Z and I
                 if ((ta == TypeClass.INT && tb == TypeClass.BOOLEAN)
-                        || (tb == TypeClass.INT && ta == TypeClass.BOOLEAN)) {
+                    || (tb == TypeClass.INT && ta == TypeClass.BOOLEAN)) {
                     return "I";
                 }
                 if (ta != tb) {

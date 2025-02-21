@@ -20,11 +20,9 @@ public class D2jTest {
     @ParameterizedTest
     @MethodSource("findDexFileClassArgs")
     void test(ArgumentContainer args) {
-        try {
+        assertDoesNotThrow(() -> {
             TestUtils.translateAndCheck(args.containingFile, args.cls);
-        } catch (Exception ex) {
-            fail(ex);
-        }
+        });
     }
 
     public static Stream<Arguments> findDexFileClassArgs() {

@@ -1,6 +1,10 @@
-description = 'Dex Reader'
+plugins {
+    id "dex2jar.build-conventions"
+}
+
+description = 'Dex/Dalvik reader for dex2jar'
 
 dependencies {
-    implementation project(':dex-reader-api')
-    testImplementation(group: 'org.apache.commons', name: 'commons-compress', version: project.property('commonsCompressVersion'))
+    api project(':dex-reader-api')
+    testImplementation libs.commons.compress
 }

@@ -1,30 +1,50 @@
 plugins {
     id "application"
+    id "dex2jar.build-conventions"
 }
 
-description = 'Dex Tools'
+description = 'Dex/Dalvik tools for dex2jar'
 
 dependencies {
-    implementation project(':dex-translator')
-    implementation project(':d2j-smali')
-    implementation project(':d2j-jasmin')
-    implementation project(':dex-writer')
-    implementation project(':dex-ir')
-    implementation project(':dex-reader-api')
-    implementation project(':dex-reader')
-    implementation project(':d2j-base-cmd')
-    implementation fileTree(dir: '../libs', include: '*.jar')
-    // implementation group: 'org.ow2.asm', name: 'asm', version: project.property('asmVersion') // Fixed MethodCodeTooLargeException
-    implementation(group: 'org.ow2.asm', name: 'asm-analysis', version: project.property('asmVersion')) {
+    api project(':dex-translator')
+    api project(':d2j-smali')
+    api project(':d2j-jasmin')
+    api project(':dex-writer')
+    api project(':d2j-base-cmd')
+    api project(path: ':d2j-external', configuration: 'shadow')
+    // api libs.asm // Fixed MethodCodeTooLargeException
+    api(libs.asm.tree) {
         exclude(module: 'asm')
     }
-    implementation(group: 'org.ow2.asm', name: 'asm-commons', version: project.property('asmVersion')) {
+    api(libs.asm.util) {
         exclude(module: 'asm')
     }
-    implementation(group: 'org.ow2.asm', name: 'asm-tree', version: project.property('asmVersion')) {
+    api(libs.asm.commons) {
         exclude(module: 'asm')
     }
-    implementation(group: 'org.ow2.asm', name: 'asm-util', version: project.property('asmVersion')) {
-        exclude(module: 'asm')
+    testImplementation libs.antlr3.runtime
+}
+
+tasks.register('bin_gen', JavaExec) {
+    dependsOn jar, ':d2j-external:shadowJar'
+    classpath sourceSets.main.runtimeClasspath
+    ext.binDir = "${layout.buildDirectory.asFile.get()}/generated-sources/bin"
+    outputs.dir file(ext.binDir)
+    mainClass.set('com.googlecode.dex2jar.bin_gen.BinGen')
+    args = ["$projectDir/src/main/bin_gen", "$ext.binDir"]
+}
+
+application {
+    applicationDistribution.from(bin_gen)
+    applicationDistribution.from('open-source-license.txt') {
+        into("lib")
+    }
+    applicationDistribution.from("$parent.rootDir") {
+        include("NOTICE.txt")
+        include("LICENSE.txt")
     }
 }
+
+startScripts.dependsOn bin_gen
+
+artifacts.archives distZip

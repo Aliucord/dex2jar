@@ -40,13 +40,16 @@ public class Dex2jarMultiThreadCmd extends BaseCmd {
     @Opt(opt = "fl", longOpt = "file-list", description = "a file contains a list of dex to process")
     private Path fileList;
 
+    @Opt(opt = "dsn", longOpt = "dont-sanitize-names", hasArg = false, description = "do not replace '_' by '-'")
+    private boolean dontSanitizeNames = false;
+
     @Override
     protected void doCommandLine() throws Exception {
         List<String> f = new ArrayList<>(Arrays.asList(remainingArgs));
         if (fileList != null) {
             f.addAll(Files.readAllLines(fileList, StandardCharsets.UTF_8));
         }
-        if (f.size() < 1) {
+        if (f.isEmpty()) {
             throw new HelpException();
         }
 
@@ -95,7 +98,7 @@ public class Dex2jarMultiThreadCmd extends BaseCmd {
             @Override
             public ClassVisitor create(final String name) {
                 final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw);
+                final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw, dontSanitizeNames);
                 return new ClassVisitor(Constants.ASM_VERSION, rca) {
                     @Override
                     public void visitEnd() {
@@ -106,7 +109,7 @@ public class Dex2jarMultiThreadCmd extends BaseCmd {
                             // FIXME handle 'java.lang.RuntimeException: Method code too large!'
                             data = cw.toByteArray();
                         } catch (Exception ex) {
-                            System.err.printf("ASM fail to generate .class file: %s%n", className);
+                            System.err.printf("ASM failed to generate .class file: %s%n", className);
                             exceptionHandler.handleFileException(ex);
                             return;
                         }

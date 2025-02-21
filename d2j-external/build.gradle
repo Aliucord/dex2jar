@@ -1,7 +1,9 @@
-apply plugin: 'com.github.johnrengelman.shadow'
+plugins {
+    alias libs.plugins.shadow
+    id "dex2jar.build-conventions"
+}
 
-description = 'Module for including external libraries'
-version '2.1-SNAPSHOT'
+description = "External and fixed libraries for dex2jar"
 
 dependencies {
     implementation fileTree(dir: '../libs', include: '*.jar')

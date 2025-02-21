@@ -1,5 +1,6 @@
 package com.googlecode.dex2jar.ir.expr;
 
+import com.googlecode.d2j.CallSite;
 import com.googlecode.d2j.DexType;
 import com.googlecode.d2j.Method;
 import com.googlecode.d2j.MethodHandle;
@@ -60,6 +61,14 @@ public final class Exprs {
     }
 
     public static Constant nString(String i) {
+        return new Constant(i);
+    }
+
+    public static Constant nMethodHandle(MethodHandle i) {
+        return new Constant(i);
+    }
+
+    public static Constant nProto(Proto i) {
         return new Constant(i);
     }
 
@@ -182,9 +191,8 @@ public final class Exprs {
         return new InvokeExpr(VT.INVOKE_VIRTUAL, regs, owner, name, argmentTypes, returnType);
     }
 
-    public static InvokeCustomExpr nInvokeCustom(Value[] regs, String name, Proto proto, MethodHandle handle,
-                                                 Object[] bsmArgs) {
-        return new InvokeCustomExpr(VT.INVOKE_CUSTOM, regs, name, proto, handle, bsmArgs);
+    public static InvokeCustomExpr nInvokeCustom(Value[] regs, CallSite callSite) {
+        return new InvokeCustomExpr(VT.INVOKE_CUSTOM, regs, callSite);
     }
 
     public static InvokePolymorphicExpr nInvokePolymorphic(Value[] regs, Proto proto, Method method) {

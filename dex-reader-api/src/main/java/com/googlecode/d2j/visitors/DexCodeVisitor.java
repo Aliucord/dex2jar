@@ -1,9 +1,9 @@
 package com.googlecode.d2j.visitors;
 
+import com.googlecode.d2j.CallSite;
 import com.googlecode.d2j.DexLabel;
 import com.googlecode.d2j.Field;
 import com.googlecode.d2j.Method;
-import com.googlecode.d2j.MethodHandle;
 import com.googlecode.d2j.Proto;
 import com.googlecode.d2j.reader.Op;
 
@@ -83,11 +83,22 @@ public class DexCodeVisitor {
     }
 
     /**
-     * <pre>
-     * CONST * CONST_WIDE * CONST_STRING * CONST_CLASS *
-     * </pre>
-     *
-     * @param value int/long/type
+     * @param op    CONST*
+     * @param ra    register
+     * @param value Integer,Long,DexType,MethodHandle,Proto
+     * @see Op#CONST
+     * @see Op#CONST_4
+     * @see Op#CONST_16
+     * @see Op#CONST_HIGH16
+     * @see Op#CONST_WIDE
+     * @see Op#CONST_WIDE_16
+     * @see Op#CONST_WIDE_32
+     * @see Op#CONST_WIDE_HIGH16
+     * @see Op#CONST_STRING
+     * @see Op#CONST_STRING_JUMBO
+     * @see Op#CONST_CLASS
+     * @see Op#CONST_METHOD_HANDLE
+     * @see Op#CONST_METHOD_TYPE
      */
     public void visitConstStmt(Op op, int ra, Object value) {
         if (visitor != null) {
@@ -187,9 +198,9 @@ public class DexCodeVisitor {
      * OP_INVOKE_CUSTOM
      * </pre>
      */
-    public void visitMethodStmt(Op op, int[] args, String name, Proto proto, MethodHandle bsm, Object... bsmArgs) {
+    public void visitMethodStmt(Op op, int[] args, CallSite callSite) {
         if (visitor != null) {
-            visitor.visitMethodStmt(op, args, name, proto, bsm, bsmArgs);
+            visitor.visitMethodStmt(op, args, callSite);
         }
     }
 

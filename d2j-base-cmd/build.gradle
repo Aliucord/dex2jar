@@ -1,5 +1,9 @@
-description = 'a simple cmd parser'
+plugins {
+    id "dex2jar.build-conventions"
+}
+
+description = "Simple cmd parser for dex2jar"
 
 dependencies {
-    implementation fileTree(dir: '../libs', include: '*.jar')
+    api project(path: ':d2j-external', configuration: 'shadow')
 }

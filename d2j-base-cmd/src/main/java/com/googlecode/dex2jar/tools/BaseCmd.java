@@ -498,7 +498,7 @@ public abstract class BaseCmd {
         final int maxPaLength = 40;
         out.println(this.cmdName + " -- " + desc);
         out.println("usage: " + this.cmdName + " " + cmdLineSyntax);
-        if (this.optMap.size() > 0) {
+        if (!this.optMap.isEmpty()) {
             out.println("options:");
         }
         // [PART.A.........][Part.B
@@ -567,10 +567,10 @@ public abstract class BaseCmd {
             }
         }
         String ver = getVersionString();
-        if (ver != null && !"".equals(ver)) {
+        if (ver != null && !ver.isEmpty()) {
             out.println("version: " + ver);
         }
-        if (onlineHelp != null && !"".equals(onlineHelp)) {
+        if (onlineHelp != null && !onlineHelp.isEmpty()) {
             if (onlineHelp.length() + "online help: ".length() > maxLength) {
                 out.println("online help: ");
                 out.println(onlineHelp);

@@ -17,7 +17,7 @@ import java.util.List;
  *
  * <pre>
  *     a=0
- *     if x>0 goto L1
+ *     if x&gt;0 goto L1
  *     L2: [b=phi(a,c)]
  *     useAsObject(b);
  *     c=getAnotherObject();
@@ -33,7 +33,7 @@ import java.util.List;
  * <pre>
  *     a1=0
  *     a=0
- *     if x>0 goto L1
+ *     if x&gt;0 goto L1
  *     a2=0
  *     L2: [b=phi(a1,c)]
  *     useAsObject(b);
@@ -67,7 +67,7 @@ public class ZeroTransformer extends StatedTransformer {
                 }
             }
         }
-        if (assignStmtList.size() == 0) {
+        if (assignStmtList.isEmpty()) {
             return false;
         }
         List<LabelStmt> phiLabels = method.phiLabels;

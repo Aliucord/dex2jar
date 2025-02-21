@@ -2,7 +2,7 @@
 Dex2jar fork with fixes and features specifically targeted for generating stubs for [Aliucord](https://github.com/Aliucord/Aliucord).
 
 <p align="center">
-  <a href="https://www.travis-ci.com/github/ThexXTURBOXx/dex2jar"><img src="https://www.travis-ci.com/ThexXTURBOXx/dex2jar.svg?branch=develop" alt="Travis CI build status"></a>
+  <a href="https://github.com/ThexXTURBOXx/dex2jar/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/ThexXTURBOXx/dex2jar/build.yml?logo=githubactions&style=flat-square" alt="Workflow status"></a>
 </p>
 
 This is [Nico Mexis'](https://github.com/ThexXTURBOXx) fork of the dex2jar project which aims to fix most issues.
@@ -21,7 +21,37 @@ This is [Nico Mexis'](https://github.com/ThexXTURBOXx) fork of the dex2jar proje
 
 ## Downloads
 
-**To download the latest builds, head to the [Releases](https://github.com/Aliucord/dex2jar/releases).**
+This fork has builds available in the following formats.<br>
+You can also only depend on a single module, if needed. The following sections include all the modules.
+
+### Maven
+
+The builds are available on [Maven Central](https://mvnrepository.com/artifact/de.femtopedia.dex2jar).
+
+```xml
+<dependency>
+    <groupId>de.femtopedia.dex2jar</groupId>
+    <artifactId>dex2jar</artifactId>
+    <version>VERSION</version>
+</dependency>
+```
+
+### Gradle
+
+The builds are available on [Maven Central](https://mvnrepository.com/artifact/de.femtopedia.dex2jar).
+
+```groovy
+implementation 'de.femtopedia.dex2jar:dex2jar:VERSION'
+```
+
+### GitHub Releases
+
+To download the latest builds, head to the [Releases](https://github.com/ThexXTURBOXx/dex2jar/releases).
+
+**Note**: The builds in [Releases](https://github.com/ThexXTURBOXx/dex2jar/releases) are automatically built by GitHub
+Actions.
+
+## Modules
 
 Tools to work with android .dex and java .class files
 
@@ -40,9 +70,10 @@ Tools to work with android .dex and java .class files
 
 ## Usage
 
-1. In the root directory run: `./gradlew shadowJar`
-2. `cd build/libs`
-3. Run `dex2jar.jar`
+1. In the root directory run: `./gradlew distZip`
+2. `cd dex-tools/build/distributions`
+3. Unzip the file `dex-tools-2.4-SNAPSHOT.zip`
+4. Run `d2j-dex2jar.sh` from the unzipped directory
 
 ### Example usage:
 

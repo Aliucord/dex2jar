@@ -10,17 +10,22 @@ import com.googlecode.dex2jar.ir.IrMethod;
 import com.googlecode.dex2jar.ir.stmt.LabelStmt;
 import com.googlecode.dex2jar.ir.stmt.Stmt;
 import com.googlecode.dex2jar.tools.Constants;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -47,7 +52,26 @@ public final class Dex2jar {
         readerConfig |= DexFileReader.SKIP_DEBUG;
     }
 
-    private void doTranslate(final Path dist) {
+    public void doTranslate(final Path dist) {
+        doTranslate(dist, null);
+    }
+
+    public void doTranslate(final ByteArrayOutputStream baos) {
+        doTranslate(null, baos);
+    }
+
+    private static String toInternalClassName(String key) {
+        if (key.endsWith(";")) key = key.substring(1, key.length() - 1);
+        return key;
+    }
+
+    /**
+     * Translates a dex file to a class file and writes it to the specified destination path and stream.
+     *
+     * @param dist The destination path where the translated class file should be written, or {@code null} if unwanted.
+     * @param baos An output stream used for intermediate data storage, or {@code null} if unwanted.
+     */
+    public void doTranslate(final Path dist, final ByteArrayOutputStream baos) {
 
         DexFileNode fileNode = new DexFileNode();
         try {
@@ -55,11 +79,49 @@ public final class Dex2jar {
         } catch (Exception ex) {
             exceptionHandler.handleFileException(ex);
         }
+
+        Map<String, String> parentsByName = fileNode.clzs.stream()
+                .filter(c -> c.superClass != null)
+                .collect(Collectors.toMap(
+                        c -> toInternalClassName(c.className),
+                        c -> toInternalClassName(c.superClass)));
+
         ClassVisitorFactory cvf = new ClassVisitorFactory() {
             @Override
             public ClassVisitor create(final String name) {
-                final ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw);
+                // If we choose to recompute the stack map frames, we need a special impl
+                final ClassWriter cw = (readerConfig & DexFileReader.COMPUTE_FRAMES) == 0
+                        ? new ClassWriter(ClassWriter.COMPUTE_MAXS)
+                        : new ClassWriter(ClassWriter.COMPUTE_FRAMES) {
+                    @Override
+                    protected String getCommonSuperClass(String type1, String type2) {
+                        if (type1.equals(type2)) return type1;
+
+                        // First collect all the possible parents of type1
+                        Set<String> parentsOfType1 = new HashSet<>();
+                        parentsOfType1.add(type1);
+                        while (parentsByName.containsKey(type1)) {
+                            type1 = parentsByName.get(type1);
+                            parentsOfType1.add(type1);
+                        }
+
+                        // Then we see whether type2 or any of its parents match
+                        while (parentsByName.containsKey(type2)) {
+                            type2 = parentsByName.get(type2);
+                            if (parentsOfType1.contains(type2)) return type2;
+                        }
+
+                        try {
+                            // Maybe the default impl can resolve the rest
+                            return super.getCommonSuperClass(type1, type2);
+                        } catch (Throwable t) {
+                            // If all else fails
+                            return "java/util/Object";
+                        }
+                    }
+                };
+                final LambadaNameSafeClassAdapter rca = new LambadaNameSafeClassAdapter(cw,
+                        (readerConfig & DexFileReader.DONT_SANITIZE_NAMES) != 0);
                 return new ClassVisitor(Constants.ASM_VERSION, rca) {
                     @Override
                     public void visitEnd() {
@@ -70,17 +132,29 @@ public final class Dex2jar {
                             // FIXME handle 'java.lang.RuntimeException: Method code too large!'
                             data = cw.toByteArray();
                         } catch (Exception ex) {
-                            System.err.printf("ASM fail to generate .class file: %s%n", className);
+                            System.err.printf("ASM failed to generate .class file: %s%n", className);
                             exceptionHandler.handleFileException(ex);
                             return;
                         }
                         try {
-                            Path dist1 = dist.resolve(className + ".class");
-                            Path parent = dist1.getParent();
-                            if (parent != null && !Files.exists(parent)) {
-                                Files.createDirectories(parent);
+                            if (baos != null) {
+                                baos.write(ByteBuffer.allocate(4).putInt(className.length()).array());
+                                baos.write(className.getBytes(StandardCharsets.UTF_8));
+                                baos.write(ByteBuffer.allocate(4).putInt(data.length).array());
+                                baos.write(data);
                             }
-                            Files.write(dist1, data);
+                        } catch (IOException e) {
+                            e.printStackTrace(System.err);
+                        }
+                        try {
+                            if (dist != null) {
+                                Path dist1 = dist.resolve(className + ".class");
+                                Path parent = dist1.getParent();
+                                if (parent != null && !Files.exists(parent)) {
+                                    Files.createDirectories(parent);
+                                }
+                                Files.write(dist1, data);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace(System.err);
                         }
@@ -282,6 +356,24 @@ public final class Dex2jar {
             this.readerConfig |= DexFileReader.SKIP_EXCEPTION;
         } else {
             this.readerConfig &= ~DexFileReader.SKIP_EXCEPTION;
+        }
+        return this;
+    }
+
+    public Dex2jar dontSanitizeNames(boolean b) {
+        if (b) {
+            this.readerConfig |= DexFileReader.DONT_SANITIZE_NAMES;
+        } else {
+            this.readerConfig &= ~DexFileReader.DONT_SANITIZE_NAMES;
+        }
+        return this;
+    }
+
+    public Dex2jar computeFrames(boolean b) {
+        if (b) {
+            this.readerConfig |= DexFileReader.COMPUTE_FRAMES;
+        } else {
+            this.readerConfig &= ~DexFileReader.COMPUTE_FRAMES;
         }
         return this;
     }

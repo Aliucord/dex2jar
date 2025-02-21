@@ -37,7 +37,7 @@ public class ClassDefItem extends BaseItem {
     private AnnotationsDirectoryItem annotations; // Build later
 
     @Off
-    private EncodedArrayItem staticValues; // Build later
+    private EncodedArray staticValues; // Build later
 
     @Override
     public int place(int offset) {
@@ -69,8 +69,7 @@ public class ClassDefItem extends BaseItem {
         }
 
         if (count >= 0) {
-            EncodedArrayItem encodedArrayItem = cp.putEnCodedArrayItem();
-            EncodedArray array = encodedArrayItem.value;
+            EncodedArray array = new EncodedArray();
             for (int i = 0; i <= count; i++) {
                 EncodedField f = fs.get(i);
                 EncodedValue ev = f.staticValue;
@@ -80,7 +79,7 @@ public class ClassDefItem extends BaseItem {
                     array.values.add(ev);
                 }
             }
-            staticValues = encodedArrayItem;
+            staticValues = cp.uniqEncodedArrayItem(array);
         }
     }
 
@@ -94,20 +93,20 @@ public class ClassDefItem extends BaseItem {
             collectMethod(methodAnnotations, parameterAnnotations, classData.directMethods, cp);
             collectMethod(methodAnnotations, parameterAnnotations, classData.virtualMethods, cp);
         }
-        if (this.classAnnotations != null || fieldAnnotations.size() > 0 || methodAnnotations.size() > 0
-                || parameterAnnotations.size() > 0) {
+        if (this.classAnnotations != null || !fieldAnnotations.isEmpty() || !methodAnnotations.isEmpty()
+                || !parameterAnnotations.isEmpty()) {
             AnnotationsDirectoryItem annotationsDirectoryItem = cp.putAnnotationDirectoryItem();
             this.annotations = annotationsDirectoryItem;
             if (classAnnotations != null) {
                 annotationsDirectoryItem.classAnnotations = cp.uniqAnnotationSetItem(classAnnotations);
             }
-            if (fieldAnnotations.size() > 0) {
+            if (!fieldAnnotations.isEmpty()) {
                 annotationsDirectoryItem.fieldAnnotations = fieldAnnotations;
             }
-            if (methodAnnotations.size() > 0) {
+            if (!methodAnnotations.isEmpty()) {
                 annotationsDirectoryItem.methodAnnotations = methodAnnotations;
             }
-            if (parameterAnnotations.size() > 0) {
+            if (!parameterAnnotations.isEmpty()) {
                 annotationsDirectoryItem.parameterAnnotations = parameterAnnotations;
             }
         }
@@ -140,7 +139,7 @@ public class ClassDefItem extends BaseItem {
         out.uint("class_idx", clazz.index);
         out.uint("access_flags", this.accessFlags);
         out.uint("superclass_idx", superclazz == null ? NO_INDEX : superclazz.index);
-        out.uint("interfaces_off", (interfaces == null || interfaces.items.size() == 0) ? 0 : interfaces.offset);
+        out.uint("interfaces_off", (interfaces == null || interfaces.items.isEmpty()) ? 0 : interfaces.offset);
         out.uint("source_file_idx", sourceFile == null ? NO_INDEX : sourceFile.index);
         out.uint("annotations_off", annotations == null ? 0 : annotations.offset);
         out.uint("class_data_off", classData == null ? 0 : classData.offset);

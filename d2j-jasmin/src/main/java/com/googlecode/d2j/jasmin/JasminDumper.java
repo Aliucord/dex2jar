@@ -28,7 +28,7 @@ import org.objectweb.asm.util.Printer;
  * <p>
  * Disassembled view of the classes in Jasmin assembler format.
  * <p>
- * The trace printed when visiting the <tt>Hello</tt> class is the following:
+ * The trace printed when visiting the <code>Hello</code> class is the following:
  * <p>
  * <blockquote>
  *
@@ -37,9 +37,9 @@ import org.objectweb.asm.util.Printer;
  * .class public Hello
  * .super java/lang/Object
  *
- * .method public <init>()V
+ * .method public &lt;init&gt;()V
  * aload 0
- * invokespecial java/lang/Object/<init>()V
+ * invokespecial java/lang/Object/&lt;init&gt;()V
  * return
  * .limit locals 1
  * .limit stack 1
@@ -55,7 +55,7 @@ import org.objectweb.asm.util.Printer;
  * .end method
  * </pre>
  *
- * </blockquote> where <tt>Hello</tt> is defined by:
+ * </blockquote> where <code>Hello</code> is defined by:
  * <p>
  * <blockquote>
  *
@@ -173,10 +173,7 @@ public class JasminDumper implements Opcodes {
         }
 
         for (FieldNode fn : cn.fields) {
-            boolean annotations = fn.visibleAnnotations != null && fn.visibleAnnotations.size() > 0;
-            if (fn.invisibleAnnotations != null && fn.invisibleAnnotations.size() > 0) {
-                annotations = true;
-            }
+            boolean annotations = fn.visibleAnnotations != null && !fn.visibleAnnotations.isEmpty();
             boolean deprecated = (fn.access & Opcodes.ACC_DEPRECATED) != 0;
             pw.print("\n.field");
             pw.print(accessFld(fn.access));
@@ -377,6 +374,11 @@ public class JasminDumper implements Opcodes {
                                 pw.print((Type.getArgumentsAndReturnSizes(desc) >> 2) - 1);
                             }
                             pw.println();
+                        }
+
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+                            visitMethodInsn(opcode, owner, name, desc, opcode == INVOKEINTERFACE);
                         }
 
                         @Override
@@ -654,11 +656,7 @@ public class JasminDumper implements Opcodes {
     }
 
     protected void print(final Label l) {
-        String name = labelNames.get(l);
-        if (name == null) {
-            name = "L" + labelNames.size();
-            labelNames.put(l, name);
-        }
+        String name = labelNames.computeIfAbsent(l, k -> "L" + labelNames.size());
         pw.print(name);
     }
 
@@ -767,7 +765,7 @@ public class JasminDumper implements Opcodes {
             pw.println();
         } else if (value instanceof List) {
             List<?> l = (List<?>) value;
-            if (l.size() > 0) {
+            if (!l.isEmpty()) {
                 Object o = l.get(0);
                 if (o instanceof String[]) {
                     pw.print("[e ");
