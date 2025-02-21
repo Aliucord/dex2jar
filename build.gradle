@@ -1,33 +1,11 @@
 plugins {
     id "base"
     id "signing"
-    alias libs.plugins.nexus.publish
     id "dex2jar.build-conventions"
     alias libs.plugins.versions
 }
 
 description = 'Supermodule for dex2jar'
-
-subprojects {
-    apply plugin: 'maven-publish'
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                from components.java
-            }
-        }
-        repositories {
-            maven {
-                url = uri('https://maven.aliucord.com/snapshots')
-                credentials {
-                    username = System.getenv("MAVEN_USERNAME")
-                    password = System.getenv("MAVEN_PASSWORD")
-                }
-            }
-        }
-    }
-}
 
 dependencies {
     api(project(":d2j-base-cmd"))

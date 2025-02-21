@@ -28,7 +28,10 @@ jobs:
           dependency-graph: generate
 
       - name: Build dex-tools with Gradle
-        run: ./gradlew check distZip
+        run: ./gradlew check distZip publish
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
 
       - name: Archive dex tools
         uses: actions/upload-artifact@v4

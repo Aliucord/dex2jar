@@ -4,9 +4,8 @@ plugins {
     id 'signing'
 }
 
-group = 'de.femtopedia.dex2jar'
-version = project.findProperty('version')
-version = version == null || version == 'unspecified' ? '2.4-SNAPSHOT' : version
+group = 'com.aliucord.d2j'
+version = "2.4-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -119,6 +118,15 @@ afterEvaluate {
                     issueManagement {
                         url.set("https://github.com/ThexXTURBOXx/dex2jar/issues")
                     }
+                }
+            }
+        }
+        repositories {
+            maven {
+                url = uri('https://maven.aliucord.com/snapshots')
+                credentials {
+                    username = System.getenv("MAVEN_USERNAME")
+                    password = System.getenv("MAVEN_PASSWORD")
                 }
             }
         }
