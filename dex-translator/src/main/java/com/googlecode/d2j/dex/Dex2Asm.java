@@ -543,11 +543,15 @@ public class Dex2Asm {
         cv.visit(version, access, toInternalName(classNode.className), signature,
                 classNode.superClass == null ? null : toInternalName(classNode.superClass), interfaceInterNames);
 
+        // Kotlinc generated closure inside a method
+        // We intentionally keep these unassociated to any class so we can reference it by its fully qualified name.
+        boolean isKotlinClosure = isInnerClass && clzInfo.enclosingMethod != null && clzInfo.innerName == null;
+
         List<InnerClassNode> innerClassNodes = new ArrayList<>(5);
-        if (clzInfo != null) {
+        if (clzInfo != null && !isKotlinClosure) {
             searchInnerClass(clzInfo, innerClassNodes);
         }
-        if (isInnerClass) {
+        if (isInnerClass && !isKotlinClosure) {
             // build Outer Clz
             if (clzInfo.innerName == null) { // anonymous Innerclass
                 Method enclosingMethod = clzInfo.enclosingMethod;
