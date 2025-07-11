@@ -1,8 +1,12 @@
 plugins {
     id "base"
-    id "signing"
+    id "com.vanniktech.maven.publish" version "0.33.0"
     id "dex2jar.build-conventions"
     alias libs.plugins.versions
+}
+
+repositories {
+    mavenCentral()
 }
 
 description = 'Supermodule for dex2jar'

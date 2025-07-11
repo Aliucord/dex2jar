@@ -1,7 +1,6 @@
 plugins {
     id 'java-library'
-    id 'maven-publish'
-    id 'signing'
+    id "com.vanniktech.maven.publish"
 }
 
 group = 'com.aliucord.d2j'
@@ -42,14 +41,14 @@ dependencies {
     }
 }
 
-signing {
-    var signingKey = providers.environmentVariable("GPG_SIGNING_KEY")
-    var signingPassphrase = providers.environmentVariable("GPG_SIGNING_PASSPHRASE")
-    if (signingKey.present && signingPassphrase.present) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-        sign publishing.publications
-    }
-}
+//signing {
+//    var signingKey = providers.environmentVariable("GPG_SIGNING_KEY")
+//    var signingPassphrase = providers.environmentVariable("GPG_SIGNING_PASSPHRASE")
+//    if (signingKey.present && signingPassphrase.present) {
+//        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
+//        sign publishing.publications
+//    }
+//}
 
 // Workaround for https://github.com/gradle/gradle/issues/820
 configurations {
@@ -74,60 +73,67 @@ test {
     systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                groupId = project.group.toString()
-                artifactId = project.name
-                version = project.version.toString()
-                if (project.name == "d2j-external") {
-                    artifact(shadowJar)
-                    artifact(sourcesJar)
-                    artifact(javadocJar)
-                } else {
-                    from(components.java)
-                }
-                pom {
-                    name.set(project.name)
-                    description.set(project.description)
-                    url.set("https://github.com/ThexXTURBOXx/dex2jar")
-                    licenses {
-                        license {
-                            name.set('The Apache License, Version 2.0')
-                            url.set('https://www.apache.org/licenses/LICENSE-2.0.txt')
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("pxb1988")
-                            name.set("Bob Pan")
-                            email.set("pxb1988@gmail.com")
-                        }
-                        developer {
-                            id.set("ThexXTURBOXx")
-                            name.set("Nico Mexis")
-                            email.set("nico.mexis@kabelmail.de")
-                        }
-                    }
-                    scm {
-                        url.set("https://github.com/ThexXTURBOXx/dex2jar.git")
-                        connection.set("scm:git:git://github.com/ThexXTURBOXx/dex2jar.git")
-                        developerConnection.set("scm:git:git://github.com/ThexXTURBOXx/dex2jar.git")
-                    }
-                    issueManagement {
-                        url.set("https://github.com/ThexXTURBOXx/dex2jar/issues")
-                    }
-                }
+mavenPublishing {
+    coordinates(group, project.name, version)
+    pom {
+        name.set("dex2jar")
+        description.set("Dex/Dalvik reader for dex2jar")
+        name.set(project.name)
+        description.set(project.description)
+        url.set("https://github.com/ThexXTURBOXx/dex2jar")
+        licenses {
+            license {
+                name.set('The Apache License, Version 2.0')
+                url.set('https://www.apache.org/licenses/LICENSE-2.0.txt')
             }
         }
-        repositories {
-            maven {
-                url = uri('https://maven.aliucord.com/snapshots')
-                credentials {
-                    username = System.getenv("MAVEN_USERNAME")
-                    password = System.getenv("MAVEN_PASSWORD")
-                }
+        developers {
+            developer {
+                id.set("pxb1988")
+                name.set("Bob Pan")
+                email.set("pxb1988@gmail.com")
+            }
+            developer {
+                id.set("ThexXTURBOXx")
+                name.set("Nico Mexis")
+                email.set("nico.mexis@kabelmail.de")
+            }
+        }
+        scm {
+            url.set("https://github.com/ThexXTURBOXx/dex2jar.git")
+            connection.set("scm:git:git://github.com/ThexXTURBOXx/dex2jar.git")
+            developerConnection.set("scm:git:git://github.com/ThexXTURBOXx/dex2jar.git")
+        }
+        issueManagement {
+            url.set("https://github.com/ThexXTURBOXx/dex2jar/issues")
+        }
+    }
+
+    signAllPublications()
+}
+
+publishing {
+    repositories {
+        maven {
+            url = uri('https://maven.aliucord.com/snapshots')
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+            if (project.name == "d2j-external") {
+                artifact(shadowJar)
+                artifact(sourcesJar)
+                artifact(javadocJar)
+            } else {
+                from(components.java)
             }
         }
     }
