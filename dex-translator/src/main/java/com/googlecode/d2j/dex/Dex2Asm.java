@@ -366,7 +366,7 @@ public class Dex2Asm {
         // HiddenApiAccessFlags is valid for .dex but not for .class
         int access = removeHiddenAccess(methodNode.access);
         // clear ACC_DECLARED_SYNCHRONIZED and ACC_CONSTRUCTOR from method flags
-        final int cleanFlag = ~((DexConstants.ACC_DECLARED_SYNCHRONIZED | DexConstants.ACC_CONSTRUCTOR));
+        final int cleanFlag = ~(DexConstants.ACC_DECLARED_SYNCHRONIZED | DexConstants.ACC_CONSTRUCTOR | DexConstants.ACC_SYNTHETIC);
         access &= cleanFlag;
         return cv.visitMethod(access, methodNode.method.getName(), methodNode.method.getDesc(), signature, xthrows);
     }
