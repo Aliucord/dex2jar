@@ -41,15 +41,6 @@ dependencies {
     }
 }
 
-//signing {
-//    var signingKey = providers.environmentVariable("GPG_SIGNING_KEY")
-//    var signingPassphrase = providers.environmentVariable("GPG_SIGNING_PASSPHRASE")
-//    if (signingKey.present && signingPassphrase.present) {
-//        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-//        sign publishing.publications
-//    }
-//}
-
 // Workaround for https://github.com/gradle/gradle/issues/820
 configurations {
     api {
