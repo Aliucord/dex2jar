@@ -37,7 +37,7 @@ jobs:
           path: dex-tools/build/distributions/dex-tools-*.zip
 
       - name: Publish to Maven Central
-        run: ./gradlew -Pversion=2.4.${{ github.run_number }} publish
+        run: ./gradlew publish
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
