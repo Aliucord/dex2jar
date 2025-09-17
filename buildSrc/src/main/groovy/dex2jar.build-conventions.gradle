@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.aliucord.d2j'
-version = "2.4-SNAPSHOT"
+version = "2.4.0"
 
 repositories {
     mavenCentral()
@@ -123,10 +123,10 @@ afterEvaluate {
         }
         repositories {
             maven {
-                url = uri('https://maven.aliucord.com/snapshots')
+                url = uri('https://maven.aliucord.com/releases')
                 credentials {
-                    username = System.getenv("MAVEN_USERNAME")
-                    password = System.getenv("MAVEN_PASSWORD")
+                    username = System.getenv("MAVEN_RELEASE_USERNAME")
+                    password = System.getenv("MAVEN_RELEASE_PASSWORD")
                 }
             }
         }
