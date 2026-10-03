@@ -15,6 +15,7 @@ import com.googlecode.d2j.node.DexFieldNode;
 import com.googlecode.d2j.node.DexFileNode;
 import com.googlecode.d2j.node.DexMethodNode;
 import com.googlecode.dex2jar.ir.IrMethod;
+import com.googlecode.dex2jar.ir.Util;
 import com.googlecode.dex2jar.ir.ts.AggTransformer;
 import com.googlecode.dex2jar.ir.ts.CleanLabel;
 import com.googlecode.dex2jar.ir.ts.DeadCodeTransformer;
@@ -565,6 +566,13 @@ public class Dex2Asm {
             }
             searchEnclosing(clzInfo, innerClassNodes);
         }
+
+        // Create a fake source entry specifically for kotlin closures, so IntelliJ IDEs can link it
+        // back to a source file correctly
+        if (isInnerClass && isKotlinClosure) {
+            cv.visitSource(Util.toShortClassName(classNode.className) + ".java", null);
+        }
+
         innerClassNodes.sort(INNER_CLASS_NODE_COMPARATOR);
         for (InnerClassNode icn : innerClassNodes) {
             if (icn.innerName != null && !isJavaIdentifier(icn.innerName)) {
